@@ -1,0 +1,4 @@
+# explogger-man targets
+# format: address:port (1 line per target)
+# 192.168.1.10:20000
+# 192.168.1.11:20000

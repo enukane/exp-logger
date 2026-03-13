@@ -1,0 +1,5 @@
+{
+    "hostname": "rpi-01",
+    "port": 20000,
+    "data_dir": "/exp-logger/data"
+}

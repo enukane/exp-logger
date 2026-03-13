@@ -1,0 +1,20 @@
+[Unit]
+Description=Network Interface Monitor (1Hz JSONL Logger)
+After=gpsd.service chrony.service network-online.target
+Wants=gpsd.service chrony.service network-online.target
+
+[Service]
+User=@@SVC_USER@@
+Environment="HOME=@@SVC_HOME@@"
+
+ExecStart=python3 @@SYMLINK@@/netmon.py \
+    --interfaces @@NETMON_INTERFACES@@ \
+    --output @@SYMLINK@@/data/netmon
+
+Restart=on-failure
+RestartSec=10
+
+WorkingDirectory=@@SVC_HOME@@
+
+[Install]
+WantedBy=multi-user.target

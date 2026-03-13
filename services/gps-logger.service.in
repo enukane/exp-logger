@@ -1,0 +1,23 @@
+[Unit]
+Description=GPS Logger (UBX)
+After=gpsd.service chrony.service
+Wants=gpsd.service chrony.service
+
+[Service]
+User=@@SVC_USER@@
+Environment="HOME=@@SVC_HOME@@"
+
+# chrony起動後10秒待つ
+ExecStartPre=/bin/sleep 10
+
+# 設定のみ実行（終了後に次へ）
+ExecStartPre=python3 @@SYMLINK@@/gpslogger-ubx.py --configure-only
+
+# メインプロセス（常駐）
+ExecStart=python3 @@SYMLINK@@/gpslogger-ubx.py --output @@SYMLINK@@/data/gps
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

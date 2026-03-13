@@ -1,0 +1,17 @@
+[Unit]
+Description=explogger-clt status API server
+After=network-online.target gps-logger.service netmon.service
+Wants=network-online.target
+
+[Service]
+User=@@SVC_USER@@
+Environment="HOME=@@SVC_HOME@@"
+
+ExecStart=python3 @@SYMLINK@@/explogger-clt.py \
+    --data-dir @@SYMLINK@@/data
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
