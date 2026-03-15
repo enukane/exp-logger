@@ -123,12 +123,23 @@ if [[ "${ENABLE_GPS_TIME_SYNC:-false}" == "true" ]]; then
     if grep -q 'refid GPS' "$CHRONY_CONF" 2>/dev/null; then
         echo "  -> refclock SHM (refid GPS) は既に設定済み (スキップ)"
     else
-        cat >> "$CHRONY_CONF" <<CHRONYEOF
+        if [[ "${ENABLE_PPS:-false}" == "true" ]]; then
+            # PPS有効時: GPS(NMEA)は秒の特定のみに使い、時刻選択からは除外
+            cat >> "$CHRONY_CONF" <<CHRONYEOF
 
 # --- ex-logger setup.sh により追記 (GPS via gpsd SHM) ---
-refclock SHM 0 refid GPS precision 1e-1 offset 0.0 delay 0.2
+refclock SHM 0 refid GPS precision 1e-1 offset 0.0 delay 0.2 noselect
 CHRONYEOF
-        echo "  -> refclock SHM 0 refid GPS を追記"
+            echo "  -> refclock SHM 0 refid GPS (noselect) を追記"
+        else
+            # PPS無効時: GPS(NMEA)を優先時刻源として使用
+            cat >> "$CHRONY_CONF" <<CHRONYEOF
+
+# --- ex-logger setup.sh により追記 (GPS via gpsd SHM) ---
+refclock SHM 0 refid GPS precision 1e-1 offset 0.0 delay 0.2 prefer trust
+CHRONYEOF
+            echo "  -> refclock SHM 0 refid GPS (prefer trust) を追記"
+        fi
     fi
 else
     echo "  -> ENABLE_GPS_TIME_SYNC=false (スキップ)"
@@ -144,9 +155,9 @@ if [[ "${ENABLE_PPS:-false}" == "true" ]]; then
         cat >> "$CHRONY_CONF" <<CHRONYEOF
 
 # --- ex-logger setup.sh により追記 (PPS) ---
-refclock PPS /dev/pps0 refid PPS lock GPS
+refclock PPS /dev/pps0 refid PPS precision 1e-7 lock GPS prefer
 CHRONYEOF
-        echo "  -> refclock PPS /dev/pps0 refid PPS lock GPS を追記"
+        echo "  -> refclock PPS /dev/pps0 refid PPS precision 1e-7 lock GPS prefer を追記"
     fi
 
     # Raspberry Pi の場合、config.txt に dtoverlay を追加
