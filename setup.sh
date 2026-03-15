@@ -82,6 +82,10 @@ echo "  ENABLE_NETMON     : ${ENABLE_NETMON:-false}"
 if [[ "${ENABLE_NETMON:-false}" == "true" ]]; then
     echo "  NETMON_INTERFACES : ${NETMON_INTERFACES:?NETMON_INTERFACES が config.conf に未設定です}"
 fi
+echo "  ENABLE_IPERF3_SRV : ${ENABLE_IPERF3_SRV:-false}"
+if [[ "${ENABLE_IPERF3_SRV:-false}" == "true" ]]; then
+    echo "  IPERF3_SRV_PORT   : ${IPERF3_SRV_PORT:?IPERF3_SRV_PORT が config.conf に未設定です}"
+fi
 echo "  ENABLE_EXPLOGGER_CLT : ${ENABLE_EXPLOGGER_CLT:-false}"
 echo "----------------------------------------"
 
@@ -90,6 +94,9 @@ echo "[1/10] 依存パッケージをインストール..."
 PACKAGES=(gpsd gpsd-clients chrony)
 if [[ "${ENABLE_PPS:-false}" == "true" ]]; then
     PACKAGES+=(pps-tools)
+fi
+if [[ "${ENABLE_IPERF3_SRV:-false}" == "true" ]]; then
+    PACKAGES+=(iperf3)
 fi
 apt-get update -qq
 apt-get install -y -qq "${PACKAGES[@]}"
@@ -228,6 +235,10 @@ if [[ "${ENABLE_NETMON:-false}" == "true" ]]; then
     mkdir -p "${DATADIR}/netmon"
     echo "  -> ${DATADIR}/netmon/"
 fi
+if [[ "${ENABLE_IPERF3_SRV:-false}" == "true" ]]; then
+    mkdir -p "${DATADIR}/iperf3-srv"
+    echo "  -> ${DATADIR}/iperf3-srv/"
+fi
 if [[ -n "${SUDO_USER:-}" ]]; then
     chown -R "${SUDO_USER}:${SUDO_USER}" "${DATADIR}"
 fi
@@ -272,12 +283,17 @@ for template in "${BASEDIR}"/services/*.service.in; do
         echo "  -> ${service_name} はスキップ (ENABLE_EXPLOGGER_CLT=false)"
         continue
     fi
+    if [[ "$service_name" == "iperf3-srv.service" && "${ENABLE_IPERF3_SRV:-false}" != "true" ]]; then
+        echo "  -> ${service_name} はスキップ (ENABLE_IPERF3_SRV=false)"
+        continue
+    fi
 
     sed \
         -e "s|@@SYMLINK@@|${SYMLINK}|g" \
         -e "s|@@SVC_USER@@|${SVC_USER}|g" \
         -e "s|@@SVC_HOME@@|${SVC_HOME}|g" \
         -e "s|@@NETMON_INTERFACES@@|${NETMON_INTERFACES:-eth0}|g" \
+        -e "s|@@IPERF3_SRV_PORT@@|${IPERF3_SRV_PORT:-5201}|g" \
         "$template" > "${SERVICEDIR}/${service_name}"
 
     INSTALLED_SERVICES+=("$service_name")
@@ -306,6 +322,9 @@ echo "データ保存先:"
 echo "  GPS   : ${SYMLINK}/data/gps/"
 if [[ "${ENABLE_NETMON:-false}" == "true" ]]; then
     echo "  Netmon: ${SYMLINK}/data/netmon/"
+fi
+if [[ "${ENABLE_IPERF3_SRV:-false}" == "true" ]]; then
+    echo "  iperf3: ${SYMLINK}/data/iperf3-srv/"
 fi
 echo ""
 echo "注: ${SYMLINK} は ${BASEDIR} へのシンボリックリンクです。"

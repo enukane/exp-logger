@@ -1,0 +1,20 @@
+[Unit]
+Description=iperf3 Server (Continuous JSONL Logger)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@@SVC_USER@@
+Environment="HOME=@@SVC_HOME@@"
+
+ExecStart=python3 @@SYMLINK@@/cont_iperf_server.py \
+    --port @@IPERF3_SRV_PORT@@ \
+    --output @@SYMLINK@@/data/iperf3-srv
+
+Restart=on-failure
+RestartSec=10
+
+WorkingDirectory=@@SVC_HOME@@
+
+[Install]
+WantedBy=multi-user.target
